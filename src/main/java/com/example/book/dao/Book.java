@@ -2,7 +2,8 @@ package com.example.book.dao;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 
 @Data
@@ -20,6 +21,10 @@ public class Book {
     private String author;
     private String genre;
     private int page;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createAt = LocalDateTime.now();
+
 
 
 }
