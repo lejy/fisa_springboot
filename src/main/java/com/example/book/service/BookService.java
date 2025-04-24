@@ -62,4 +62,13 @@ public class BookService {
 
         return bookRepository.save(existingBook);
     }
+
+
+    public List<Book> getBookByTitle(String title) {
+        return bookRepository.findByTitleContaining(title);
+    }
+
+    public List<Book> getBookByPagesBetween(int hpage, int lpage) {
+        return bookRepository.findByPageBetween(hpage,lpage);
+    }
 }

@@ -31,19 +31,19 @@ public class BookController {
     }
 
     @Operation(summary = "Book 정보 ID로 조회", description = "Book의 id로 조회합니다.")
-    @GetMapping("/{id}")   // 옵셔널<자료형>은 null로 발생하는 예외를 처리해주는 wrapper 클래스입니다.
+    @GetMapping("/id/{id}")   // 옵셔널<자료형>은 null로 발생하는 예외를 처리해주는 wrapper 클래스입니다.
     public Optional<Book> getBookById(@PathVariable Long id){
         return bookService.getBookById(id);
     }
 
     @Operation(summary = "Book 정보 저장", description = "Book의 전체 정보를 저장합니다.")
-    @PostMapping        //리퀘스트바디 body에 실려오는 값을 북 자료형을 받겠음.
+    @PostMapping("/save")        //리퀘스트바디 body에 실려오는 값을 북 자료형을 받겠음.
     public Book saveBook(@RequestBody Book book){
         return bookService.saveBook(book);
     }
 
     @Operation(summary = "id로 삭제")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public void deleteBookById(@PathVariable Long id){
         bookService.deleteBookById(id);
     }
@@ -61,8 +61,8 @@ public class BookController {
         return bookService.getBookByTitleAndAuthor(title, author);
     }
 
-    @Operation(summary = "책 수정하기")
-    @PutMapping("/{id}") // 전부를 가져가서 변경
+    @Operation(summary = "책 풋매핑 수정하기")
+    @PutMapping("/modify_put/{id}") // 전부를 가져가서 변경
     public void updateBookById(@PathVariable Long id, @RequestBody Book book){
         // 1, 전체내용을 books 테이블에서 조회
         book.setId(id);
@@ -72,11 +72,34 @@ public class BookController {
 
     }
 
-    @PatchMapping("/{id}") // 변경할 사항만 가져가서 변경
+    @Operation(summary = "책 패치매핑 수정하기")
+    @PatchMapping("/modify_patch/{id}") // 변경할 사항만 가져가서 변경
     public void updateBookById2(@PathVariable Long id, @RequestBody Book book) {
         // 1. 전체 내용을 books 테이블에서 조회
         // 2. 클라이언트가 body에 준 book의 모든 일부 변경사항을 행에 반영한다.
         // 3. 그 결과를 service를 통해 repository로 전달한다.
         bookService.updateBookById2(id,book);
     }
+
+    @Operation(summary = "책 제목으로 찾기")
+    @GetMapping("/title/{title}")
+    public List<Book> getBookByTitle(@RequestParam String title){
+       return bookService.getBookByTitle(title);
+    }
+
+    @Operation(summary = "책 페이지수로 찾기")
+    @GetMapping("/page")
+    public List<Book> getBookByPagesBetween(@RequestParam int hpage, @RequestParam int lpage){
+        return bookService.getBookByPagesBetween(hpage,lpage);
+    }
+
+
+
+
+
+
+
+
+
+
 }
