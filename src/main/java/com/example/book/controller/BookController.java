@@ -6,13 +6,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
 @Controller
-@RestController
 @RequestMapping("/books")
 @Tag(name = "swagger 테스트 API", description = "swagger 테스트를 진행하는 API")
 public class BookController {
@@ -26,8 +26,11 @@ public class BookController {
 
     @Operation(summary = "Book 정보 모두 조회", description = "Book의 전체 정보를 조회합니다.")
     @GetMapping("/all")
-    public List<Book> getAllBooks() {
-        return bookService.getAllBooks();
+    public String getAllBooks(Model model) { // string으로 바꾼 이유는 리턴타입은 bookmain의 html 코드와 model로 전달한 데이터가 합쳐져 화면을 만들기 때문!
+
+        List<Book> books =  bookService.getAllBooks();
+        model.addAttribute("books", books);
+        return "bookmain";
     }
 
     @Operation(summary = "Book 정보 ID로 조회", description = "Book의 id로 조회합니다.")
@@ -36,10 +39,19 @@ public class BookController {
         return bookService.getBookById(id);
     }
 
+    @GetMapping("/add")
+    public String addBookForm(Model model) {
+        // book에 넣을 각 입력필드에서 값을 받아오기 위해 새 book 객체를 만들고'
+        Book book = new Book();
+        model.addAttribute("book",book);
+        return "form-add";
+    }
+
     @Operation(summary = "Book 정보 저장", description = "Book의 전체 정보를 저장합니다.")
     @PostMapping("/save")        //리퀘스트바디 body에 실려오는 값을 북 자료형을 받겠음.
-    public Book saveBook(@RequestBody Book book){
-        return bookService.saveBook(book);
+    public String saveBook(@ModelAttribute Book book){
+        bookService.saveBook(book);
+        return "redirect:/books"; // 화면에서 입력받은 결과를 db에 저장하고 확인시켜주기 위해 전체 책 조회 /books 메서드를 호출
     }
 
     @Operation(summary = "id로 삭제")
