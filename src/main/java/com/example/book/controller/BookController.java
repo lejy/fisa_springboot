@@ -1,10 +1,9 @@
 package com.example.book.controller;
 
+
 import com.example.book.dao.Book;
 import com.example.book.service.BookService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -12,106 +11,88 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Controller
 @RequestMapping("/books")
-@Tag(name = "swagger 테스트 API", description = "swagger 테스트를 진행하는 API")
 public class BookController {
 
-    @Autowired
-    private BookService bookService;
+    private final BookService bookService;
 
-    public BookController(BookService bookService){
+    public BookController(BookService bookService) {
         this.bookService = bookService;
     }
 
-    @Operation(summary = "Book 정보 모두 조회", description = "Book의 전체 정보를 조회합니다.")
-    @GetMapping("/all")
-    public String getAllBooks(Model model) { // string으로 바꾼 이유는 리턴타입은 bookmain의 html 코드와 model로 전달한 데이터가 합쳐져 화면을 만들기 때문!
 
-        List<Book> books =  bookService.getAllBooks();
+
+    // 📘 책 목록
+    @GetMapping
+    public String getAllBooks(Model model) {
+        List<Book> books = bookService.getAllBooks();
         model.addAttribute("books", books);
-        return "bookmain";
+        log.info("인포 사용자 입장!!!!!!");
+        log.debug("디버그 사용자 입장~~~~");
+        log.warn("원 사용자 입장~~~~~");
+        log.error("에러 사용자 입장!!!!!");
+        log.trace("트레이서가 왔어!!!");
+        return "bookmain"; // bookmain.html + book-list fragment
     }
 
-    @Operation(summary = "Book 정보 ID로 조회", description = "Book의 id로 조회합니다.")
-    @GetMapping("/id/{id}")   // 옵셔널<자료형>은 null로 발생하는 예외를 처리해주는 wrapper 클래스입니다.
-    public Optional<Book> getBookById(@PathVariable Long id){
-        return bookService.getBookById(id);
-    }
-
+    // ➕ 책 추가 폼
     @GetMapping("/add")
     public String addBookForm(Model model) {
-        // book에 넣을 각 입력필드에서 값을 받아오기 위해 새 book 객체를 만들고'
-        Book book = new Book();
-        model.addAttribute("book",book);
-        return "form-add";
+        model.addAttribute("book", new Book()); // 폼 바인딩용 빈 객체
+        return "form-add"; // bookmain.html + form-add fragment
     }
 
-    @Operation(summary = "Book 정보 저장", description = "Book의 전체 정보를 저장합니다.")
-    @PostMapping("/save")        //리퀘스트바디 body에 실려오는 값을 북 자료형을 받겠음.
-    public String saveBook(@ModelAttribute Book book){
+    // 💾 책 저장
+    @PostMapping
+    public String saveBook(@ModelAttribute Book book) {
         bookService.saveBook(book);
-        return "redirect:/books"; // 화면에서 입력받은 결과를 db에 저장하고 확인시켜주기 위해 전체 책 조회 /books 메서드를 호출
+        return "redirect:/books"; // 저장 후 목록으로 리다이렉트
     }
 
-    @Operation(summary = "id로 삭제")
-    @DeleteMapping("/delete/{id}")
-    public void deleteBookById(@PathVariable Long id){
+    // 🔍 책 검색 폼
+    @GetMapping("/search")
+    public String searchForm() {
+        return "form-search"; //bookmain.html + form-search fragment
+    }
+
+    // 📊 조건 검색
+    @GetMapping("/select4")
+    public String searchBooks(@RequestParam String title,
+                              @RequestParam String author,
+                              Model model) {
+        List<Book> results = bookService.getBookByTitleAndAuthor(title, author);
+        model.addAttribute("books", results);
+        return "bookmain"; // 검색 결과는 목록 fragment로 출력
+    }
+
+    // 🗑 삭제
+    @PostMapping("/{id}/delete")
+    public String deleteBook(@PathVariable Long id) {
         bookService.deleteBookById(id);
+        return "redirect:/books";
     }
 
-    @Operation(summary = "작가로 책 찾기")
-    @GetMapping("/author")
-    public List<Book> getBookByAuthor(@RequestParam String author){
-        return bookService.getBookByAuthor(author);
+    @GetMapping("/{id}/edit")
+    public String editBookForm(@PathVariable Long id, Model model) {
+        Optional<Book> bookOptional = bookService.getBookById(id);
+        if (bookOptional.isPresent()) {
+            model.addAttribute("book", bookOptional.get());
+            return "form-edit";
+        } else {
+            return "redirect:/books"; // 존재하지 않으면 목록으로
+        }
     }
 
-    // 책을 저자로 조회하는 API
-    @Operation(summary = "제목과 작가로 책 찾기")
-    @GetMapping("/select10") // select10?title=스프링부트&author=장정우
-    public List<Book> getBookByTitleAndAuthor(@RequestParam String title, @RequestParam String author) {
-        return bookService.getBookByTitleAndAuthor(title, author);
-    }
-
-    @Operation(summary = "책 풋매핑 수정하기")
-    @PutMapping("/modify_put/{id}") // 전부를 가져가서 변경
-    public void updateBookById(@PathVariable Long id, @RequestBody Book book){
-        // 1, 전체내용을 books 테이블에서 조회
+    // ✏️ 수정
+    @PostMapping("/{id}/update")
+    public String updateBook(@PathVariable Long id, @ModelAttribute Book book) {
         book.setId(id);
-        // 2. 클라이언트가 body에 준 book의 모든 변경사항을 행에 반영한다.
-        // 3. 그 결과를 service를 통해 repository로 전달한다.
         bookService.saveBook(book);
-
+        return "redirect:/books";
     }
 
-    @Operation(summary = "책 패치매핑 수정하기")
-    @PatchMapping("/modify_patch/{id}") // 변경할 사항만 가져가서 변경
-    public void updateBookById2(@PathVariable Long id, @RequestBody Book book) {
-        // 1. 전체 내용을 books 테이블에서 조회
-        // 2. 클라이언트가 body에 준 book의 모든 일부 변경사항을 행에 반영한다.
-        // 3. 그 결과를 service를 통해 repository로 전달한다.
-        bookService.updateBookById2(id,book);
-    }
-
-    @Operation(summary = "책 제목으로 찾기")
-    @GetMapping("/title/{title}")
-    public List<Book> getBookByTitle(@RequestParam String title){
-       return bookService.getBookByTitle(title);
-    }
-
-    @Operation(summary = "책 페이지수로 찾기")
-    @GetMapping("/page")
-    public List<Book> getBookByPagesBetween(@RequestParam int hpage, @RequestParam int lpage){
-        return bookService.getBookByPagesBetween(hpage,lpage);
-    }
-
-
-
-
-
-
-
-
-
+    // 수정 화면에 bootstrap 을 입혀보시고
 
 }
